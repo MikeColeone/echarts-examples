@@ -1,14 +1,48 @@
 import { registerTheme } from "echarts";
+// 定义 funnel tooltip 参数类型
+interface FunnelTooltipParams {
+  name: string;
+  value: number;
+  percent: number;
+}
+interface ECharts {
+  registerTheme: (name: string, theme: Record<string, unknown>) => void;
+}
 
+interface TooltipSize {
+  contentSize: number[];
+}
+
+//默认调色板颜色
 const baseColors = [
-  "#4E83FD",
-  "#50CEFB",
-  "#935AF6",
-  "#F76964",
-  "#FAD355",
-  "#37A2DA",
-  "#32C5E9",
-  "#67E0E3",
+  "#3370EB",
+  "#1BCEBF",
+  "#FFC60A",
+  "#ED6D0C",
+  "#DCA1E4",
+  "#25B2E5",
+  "#6DCDEB",
+  "#288FCB",
+  "#94B5F5",
+  "#8F61D1",
+  "#BF78E9",
+  "#008280",
+  "#27AD8E",
+  "#7BC335",
+  "#2E65D3",
+  "#18B9AC",
+  "#E5B209",
+  "#D5620B",
+  "#C691CD",
+  "#21A0CE",
+  "#62B8D3",
+  "#2481B7",
+  "#85A3DC",
+  "#8157BC",
+  "#AC6CD2",
+  "#007573",
+  "#239C80",
+  "#6FAF30",
 ];
 
 const customTheme = {
@@ -24,115 +58,315 @@ const customTheme = {
       fontSize: 12,
       color: "#646A73",
     },
-    left: "center",
-    top: 20,
+  },
+  label: {
+    show: false,
+    position: "top",
+    distance: 8,
   },
   tooltip: {
-    position(point, params, dom, rect, size) {
-      return [point[0], point[1] - size.contentSize[1]];
-    },
-    formatter(params) {
-      return `
-        <div style="font-weight:bold;margin-bottom:6px; font-size:12px; color:#1F2329">${params.name}</div>
-        <div>
-          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${params.color};margin-right:5px;"></span>
-          ${params.seriesName}: ${params.value}
-        </div>
-      `;
+    // 减少参数数量，使用对象解构，同时明确参数类型
+    // eslint-disable-next-line @typescript-eslint/max-params
+    position(
+      point: [number, number],
+      _params: undefined,
+      _dom: unknown,
+      _rect: unknown,
+      size: TooltipSize
+    ) {
+      return [point[0], point[1] - (size.contentSize[1] ?? 0)];
     },
   },
   legend: {
+    itemGap: 12,
+    top: "auto",
     bottom: 0,
-    icon: "rect",
-    itemGap: 16,
-    height: 16,
-    itemWidth: 10,
-    itemHeight: 10,
-    formatter: function (name) {
-      return name.length > 8 ? name.substring(0, 8) + "..." : name;
+    left: "center",
+    icon: "circle",
+    itemWidth: 8,
+    itemHeight: 8,
+    formatter(name: unknown) {
+      // 确保 name 是字符串类型，避免 any 类型
+      const safeName = typeof name === "string" ? name : String(name);
+      return safeName.length > 8 ? `${safeName.substring(0, 8)}...` : safeName;
+    },
+    itemStyle: {
+      borderRadius: 13,
     },
     type: "scroll",
-    pageButtonItemGap: 5,
+    pageButtonItemGap: 2,
     pageButtonPosition: "end",
     pageFormatter: "{current}/{total}",
     pageIconColor: "#333",
     pageIconInactiveColor: "#aaa",
     pageTextStyle: { color: "#666" },
-    left: "center",
     orient: "horizontal",
     textStyle: {
       color: "#646A73",
       fontSize: 12,
     },
+  },
+  dataZoom: [
+    {
+      type: "inside",
+      start: 94,
+      end: 100,
+    },
+    {
+      type: "slider",
+      show: true,
+      yAxisIndex: 0,
+      filterMode: "empty",
+      width: 12,
+      height: "70%",
+      handleSize: 8,
+      showDataShadow: false,
+      left: "93%",
+    },
+  ],
+  grid: {
+    left: "20px",
+    right: "16px",
+    top: "46px",
+    bottom: "36px",
     tooltip: {
       show: true,
-      formatter: function (name) {
-        return `
-        <div style="display: flex; align-items: center;">
-          <span style="
-            display:inline-block;
-            width:10px;
-            height:10px;
-            margin-right:6px;
-            background-color:#ccc;
-            border-radius:2px;
-          "></span>
-          ${name}
-        </div>`;
-      },
+      trigger: "axis",
     },
-  },
-
-  grid: {
-    left: "24px",
-    right: "24px",
-    bottom: "24px",
-    top: "24px",
     containLabel: true,
   },
   categoryAxis: {
     type: "category",
     axisTick: { show: false },
     axisLine: {
-      lineStyle: { color: "#1F232950", type: "solid", width: 1 },
+      show: false,
     },
     axisLabel: { color: "#8F959E", fontSize: 12 },
   },
   valueAxis: {
     type: "value",
+    axisTick: { show: false },
     axisLabel: { color: "#646A73", fontSize: 12 },
     splitLine: {
-      lineStyle: { color: "#1F23291A", type: "dashed", width: 1 },
+      show: true,
+      lineStyle: { color: "#1F232921", type: "solid", lineWidth: 0.5 },
     },
   },
-  dataZoom: [
-    {
-      type: "slider",
-      show: true,
-      start: 0,
-      end: 100,
-      backgroundColor: "rgba(245, 245, 245, 0.8)",
-      borderColor: "#ddd",
-      fillerColor: "rgba(167, 190, 211, 0.5)",
-      handleStyle: {
-        color: "#fff",
-        borderColor: "#888",
-        shadowBlur: 2,
-        shadowColor: "rgba(0, 0, 0, 0.3)",
+
+  //仪表盘
+  gauge: {},
+  // 折线图
+  line: {
+    smooth: true,
+
+    legend: {
+      itemWidth: 100,
+      itemHeight: 10,
+    },
+    itemStyle: {
+      borderWidth: 3,
+    },
+    lineStyle: {
+      width: 2,
+    },
+    showSymbol: false,
+
+    emphasis: {
+      showSymbol: true,
+    },
+  },
+  // 柱状图
+  bar: {
+    tooltip: {
+      trigger: "axis",
+      axisPointer: {
+        type: "shadow",
+        label: {
+          show: true,
+        },
       },
     },
-  ],
+    itemStyle: { borderRadius: [4, 4, 4, 4] },
+    barWidth: "25%",
+    barGap: "10%",
+  },
+  // 词云
+  wordCloud: {
+    color: baseColors,
+    sizeRange: [16, 48],
+    rotationRange: [0, 0],
+    textStyle: {
+      opacity: 0.5,
+
+      fontWeight: "normal",
+    },
+    emphasis: {
+      textStyle: {
+        fontWeight: "bold",
+        opacity: 1,
+      },
+    },
+    gridSize: 6,
+    drawOutOfBound: false,
+    shape: "cardioid",
+    layoutAnimation: true,
+  },
+  // 饼图
+  pie: {
+    itemStyle: {
+      borderRadius: 4,
+      borderColor: "#FFFFFF",
+      borderWidth: 1.5,
+    },
+    label: {
+      show: true,
+      position: "outside",
+      formatter: "{b}: {d}%",
+      fontSize: 12,
+    },
+    labelLine: {
+      show: true,
+      length: 20,
+      width: 1,
+      smooth: true,
+    },
+    radius: "60%",
+    tooltip: {
+      trigger: "item",
+      borderWidth: 1,
+    },
+    emphasis: {
+      itemSize: 1.08,
+    },
+  },
+  // 散点图
+  scatter: {
+    symbolSize: 8,
+    emphasis: {
+      itemStyle: {
+        borderWidth: 2,
+        borderColor: baseColors,
+        color: "#FFFFFF",
+      },
+    },
+    valueAxis: {
+      splitLine: {
+        show: false,
+      },
+      axisLine: {
+        show: false,
+      },
+    },
+  },
+  // 雷达图
+  radar: {
+    label: {
+      position: "insideStart",
+      formatter: "{c}",
+    },
+    itemStyle: {
+      opacity: 0.5,
+      borderWidth: 2,
+    },
+    lineStyle: {
+      width: 2,
+    },
+    splitArea: {
+      show: false,
+    },
+    areaStyle: {
+      opacity: 0.2,
+    },
+    emphasis: {
+      itemStyle: {
+        opacity: 1,
+      },
+    },
+  },
+  // 面积
+  area: {
+    areaStyle: {
+      color: {
+        type: "linear",
+        x: 0,
+        y: 0,
+        x2: 0,
+        y2: 1,
+        colorStops: [
+          {
+            offset: 0,
+            color: baseColors[0],
+          },
+          {
+            offset: 1,
+            color: `#FFFFFF00`,
+          },
+        ],
+      },
+    },
+  },
+  // 漏斗图
+  funnel: {
+    height: "80%",
+    minSize: "3%",
+    tooltip: {
+      show: true,
+      borderColor: "#E6E6E6",
+      borderWidth: 1,
+      padding: [10, 15],
+      formatter: (params: FunnelTooltipParams) =>
+        `${params.name}<br/>数量：${String(
+          params.value
+        )}<br/>转化率：${params.percent.toFixed(2)}%`,
+    },
+    label: {
+      show: true,
+      textStyle: {
+        fontSize: 14,
+        lineHeight: 1.5,
+        color: "#fff",
+      },
+    },
+    itemStyle: {
+      borderRadius: [8, 8, 0, 0],
+      borderColor: "#fff",
+      borderWidth: 2,
+    },
+    emphasis: { itemStyle: { opacity: 0.9 } },
+    xAxis: {
+      show: false,
+    },
+  },
+  // 图形元素配置
+  graphic: {
+    elements: [
+      {
+        type: "text",
+        style: {
+          fontSize: 14,
+          fill: "#646A73",
+          fontWeight: "normal",
+        },
+      },
+      {
+        type: "text",
+        style: {
+          fontSize: 24,
+          fill: "#333",
+          fontWeight: "bold",
+        },
+      },
+    ],
+  },
+  // 系列配置
   series: [
     {
-      type: "line",
-      itemStyle: { color: "#4E83FD" },
-      lineStyle: { width: 2 },
-      showSymbol: false,
-    },
-    {
       type: "bar",
-      itemStyle: { borderRadius: [2, 2, 0, 0] },
-      barGap: "20%",
+      emphasis: {
+        itemStyle: {
+          color: "#4E83FD",
+        },
+      },
     },
     {
       type: "wordCloud",
@@ -140,191 +374,24 @@ const customTheme = {
       rotationRange: [0, 0],
       textStyle: {
         fontFamily: "Arial, sans-serif",
-        fontSize: 14,
+        fontWeight: "normal",
       },
       emphasis: {
         textStyle: {
-          fontSize: 1.2,
+          fontSize(data: { value: number }) {
+            return data.value * 1.2;
+          },
           fontWeight: "bold",
         },
       },
       gridSize: 6,
+      drawOutOfBound: false,
       shape: "cardioid",
       layoutAnimation: true,
     },
     {
-      type: "pie",
-      itemStyle: {
-        borderRadius: 4,
-        borderColor: "#FFFFFF",
-        borderWidth: 3,
-      },
-      label: {
-        show: true,
-        position: "outside",
-        formatter: "{b}: {d}%",
-        fontSize: 12,
-      },
-      labelLine: {
-        show: true,
-        length: 20,
-        smooth: true,
-      },
-      center: ["50%", "50%"],
-      radius: "60%",
-    },
-    {
       type: "funnel",
-      tooltip: {
-        show: true,
-        backgroundColor: "rgba(255,255,255,0.9)",
-        borderColor: "#E6E6E6",
-        borderWidth: 1,
-        textStyle: { color: "#333" },
-        padding: [10, 15],
-        formatter(params) {
-          return `${params.name}<br/>数量：${params.value}<br/>转化率：${params.percent}%`;
-        },
-      },
-      label: {
-        color: "#333",
-        fontSize: 12,
-        position: "inside",
-        formatter: "{b}\n{c}",
-      },
-      itemStyle: {
-        borderRadius: [8, 8, 0, 0],
-        borderColor: "#fff",
-        borderWidth: 2,
-      },
-      emphasis: { itemStyle: { opacity: 0.9 } },
-    },
-    {
-      type: "scatter",
-      itemStyle: {
-        opacity: 0.8,
-        borderWidth: 1,
-        borderColor: "transparent",
-      },
-      symbol: "circle",
-      symbolSize: 8,
-    },
-    {
-      type: "radar",
-      axisLine: {
-        lineStyle: { color: "#E9E9EA", width: 1 },
-      },
-      splitLine: {
-        lineStyle: { color: "#E9E9EA", width: 1 },
-      },
-      splitArea: {
-        areaStyle: { color: "transparent" },
-      },
-      lineStyle: { width: 2.5 },
-      itemStyle: {
-        borderWidth: 2,
-      },
-    },
-    {
-      type: "heatmap",
-      itemStyle: {
-        borderColor: "#fff",
-        borderWidth: 1,
-        borderRadius: 2,
-      },
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 4,
-          shadowColor: "rgba(0,0,0,0.1)",
-          borderColor: "#4E83FD",
-          borderWidth: 2,
-        },
-      },
-    },
-    {
-      type: "ring",
-      radius: ["40%", "70%"],
-      center: ["50%", "50%"],
-    },
-    {
-      type: "area",
-      areaStyle: {
-        color: {
-          type: "linear",
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
-          colorStops: [
-            { offset: 0, color: "#4E83FD" },
-            { offset: 1, color: `#50CEFB80` },
-          ],
-        },
-      },
-    },
-    {
-      type: "waterfall",
-      itemStyle: {
-        borderRadius: [4, 4, 0, 0],
-      },
-      label: {
-        show: true,
-        position: "top",
-        fontSize: 12,
-      },
-    },
-    {
-      type: "stackedArea",
-      stack: "total",
-    },
-    {
-      type: "horizontalFunnel",
-      orient: "horizontal",
-      left: "10%",
-      right: "15%",
-      top: "center",
-      bottom: "40%",
-      height: "60%",
-      label: {
-        show: true,
-        position: "inside",
-        fontSize: 14,
-        color: "#333333",
-      },
-    },
-    {
-      type: "progress",
-      itemStyle: {
-        color: "#4E83FD",
-      },
-    },
-    {
-      type: "indicator",
-      containerStyle: {
-        backgroundColor: "#fff",
-        borderRadius: 8,
-        border: "1px solid #e8e8e8",
-        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-        padding: "16px",
-        width: "100%",
-        boxSizing: "border-box",
-      },
-      titleStyle: {
-        fontSize: 14,
-        color: "#646A73",
-        marginBottom: 4,
-      },
-      subTitleStyle: {
-        fontSize: 12,
-        color: "#9CA3AF",
-        marginBottom: 8,
-      },
-      valueStyle: {
-        fontSize: 24,
-        color: "#333",
-        fontWeight: "bold",
-      },
-      colorVariants: baseColors,
+      sort: "descending",
     },
   ],
 };
